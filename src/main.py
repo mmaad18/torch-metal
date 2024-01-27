@@ -3,19 +3,51 @@ import torch
 
 from fourier import *
 from utils import *
+from typing import Tuple
+
 
 def main():
+    #dft_sum1_test()
+    #dft_sum2_test()
+    dft_sum3_test()
+
+
+def dft_sum1_test():
     M = 1000
-    f = signal(M)
+    f = signal1(M)
     ft = torch.from_numpy(f)
 
     F = time_function(dft_sum1, f)
     Ft = time_function(torch.fft.fft, ft)
-    print("F:\n", F)
-    print("Ft:\n", Ft)
 
     diff = np.sum(np.abs(F - Ft.numpy())) / M
     print("diff:\n", diff)
+    print("f:\n", signal2(3))
+
+
+def dft_sum2_test():
+    M, N = 50, 50
+    f = signal2((M, N))
+    ft = torch.from_numpy(f)
+
+    F = time_function(dft_sum2, f)
+    Ft = time_function(torch.fft.fft2, ft)
+
+    diff = np.sum(np.abs(F - Ft.numpy())) / (M*N)
+    print("diff:\n", diff)
+
+
+def dft_sum3_test():
+    M, N, O = 15, 15, 15
+    f = signal3((M, N, O))
+    ft = torch.from_numpy(f)
+
+    F = time_function(dft_sum3, f)
+    Ft = time_function(torch.fft.fftn, ft)
+
+    diff = np.sum(np.abs(F - Ft.numpy())) / (M*N*O)
+    print("diff:\n", diff)
+
 
 
 
