@@ -50,3 +50,39 @@ def dft_sum3(f: np.ndarray):
                                 -1j * 2 * np.pi * (p * m / M + q * n / N + r * o / O)
                             )
     return F
+
+
+def twiddle_factor(k: int, n: int, N: int):
+    return np.exp(-1j * 2 * np.pi * k * n / N)
+
+
+def dft_mat1(f: np.ndarray):
+    N = len(f)
+    A = np.zeros([N, N], dtype=np.complex128)
+    A[0, :] = np.ones(N, dtype=np.complex128)
+    A[:, 0] = np.ones(N, dtype=np.complex128)
+
+    for k in range(1, N):
+        for n in range(1, N):
+            A[k, n] = twiddle_factor(k, n, N)
+
+    return A.dot(f)
+
+
+def dft_mat2(f: np.ndarray):
+    M, N = np.shape(f)
+    A = np.zeros([M, N], dtype=np.complex128)
+    A[0, :] = np.ones(N, dtype=np.complex128)
+    A[:, 0] = np.ones(M, dtype=np.complex128)
+
+    for p in range(1, M):
+        for q in range(1, N):
+            for m in range(1, M):
+                for n in range(1, N):
+                    A[p, q] += twiddle_factor(p, m, M) * twiddle_factor(q, n, N)
+
+    return A.dot(f)
+
+
+
+
