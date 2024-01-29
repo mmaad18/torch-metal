@@ -7,13 +7,13 @@ def signal1(size: int = 1000):
     return np.array(f, dtype=np.complex128)
 
 
-def signal2(size: Tuple[int, int] = (100, 100)):
-    f = np.random.random(size)
+def signal2(shape: Tuple[int, int] = (100, 100)):
+    f = np.random.random(shape)
     return np.array(f, dtype=np.complex128)
 
 
-def signal3(size: Tuple[int, int, int] = (10, 10, 10)):
-    f = np.random.random(size)
+def signal3(shape: Tuple[int, int, int] = (10, 10, 10)):
+    f = np.random.random(shape)
     return np.array(f, dtype=np.complex128)
 
 
@@ -56,33 +56,63 @@ def twiddle_factor(k: int, n: int, N: int):
     return np.exp(-1j * 2 * np.pi * k * n / N)
 
 
+def dft_matrix(N: int):
+    A = np.zeros([N, N], dtype=np.complex128)
+
+    for k in range(0, N):
+        for n in range(0, N):
+            A[k, n] = twiddle_factor(k, n, N)
+
+    #return np.array([[twiddle_factor(k, n, N) for n in range(N)] for k in range(N)])
+    return A
+
+
 def dft_mat1(f: np.ndarray):
     N = len(f)
-    A = np.zeros([N, N], dtype=np.complex128)
-    A[0, :] = np.ones(N, dtype=np.complex128)
-    A[:, 0] = np.ones(N, dtype=np.complex128)
-
-    for k in range(1, N):
-        for n in range(1, N):
-            A[k, n] = twiddle_factor(k, n, N)
+    A = dft_matrix(N)
 
     return A.dot(f)
 
 
 def dft_mat2(f: np.ndarray):
-    M, N = np.shape(f)
-    A = np.zeros([M, N], dtype=np.complex128)
-    A[0, :] = np.ones(N, dtype=np.complex128)
-    A[:, 0] = np.ones(M, dtype=np.complex128)
+    M, N = f.shape
+    A_M = dft_matrix(M)  # DFT matrix for the rows
+    A_N = dft_matrix(N)  # DFT matrix for the columns
 
-    for p in range(1, M):
-        for q in range(1, N):
-            for m in range(1, M):
-                for n in range(1, N):
-                    A[p, q] += twiddle_factor(p, m, M) * twiddle_factor(q, n, N)
+    # Apply DFT along rows
+    F_rowwise = np.dot(A_M, f)
 
-    return A.dot(f)
+    # Apply DFT along columns
+    F = np.dot(F_rowwise, A_N.T)  # Transpose A_N to align for column-wise operation
 
+    return F
+
+
+def dft_mat3(f: np.ndarray):
+    M, N, O = f.shape
+    A_M = dft_matrix(M)  # DFT matrix for the rows
+    A_N = dft_matrix(N)  # DFT matrix for the columns
+    A_O = dft_matrix(O)  # DFT matrix for the depths
+
+    # Apply DFT along the first dimension (M)
+    F_first = np.zeros_like(f, dtype=np.complex128)
+    for n in range(N):
+        for o in range(O):
+            F_first[:, n, o] = A_M.dot(f[:, n, o])
+
+    # Apply DFT along the second dimension (N)
+    F_second = np.zeros_like(f, dtype=np.complex128)
+    for m in range(M):
+        for o in range(O):
+            F_second[m, :, o] = A_N.dot(F_first[m, :, o])
+
+    # Apply DFT along the third dimension (O)
+    F = np.zeros_like(f, dtype=np.complex128)
+    for m in range(M):
+        for n in range(N):
+            F[m, n, :] = A_O.dot(F_second[m, n, :])
+
+    return F
 
 
 
