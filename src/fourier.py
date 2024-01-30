@@ -63,7 +63,6 @@ def dft_matrix(N: int):
         for n in range(0, N):
             A[k, n] = twiddle_factor(k, n, N)
 
-    #return np.array([[twiddle_factor(k, n, N) for n in range(N)] for k in range(N)])
     return A
 
 
@@ -79,13 +78,7 @@ def dft_mat2(f: np.ndarray):
     A_M = dft_matrix(M)  # DFT matrix for the rows
     A_N = dft_matrix(N)  # DFT matrix for the columns
 
-    # Apply DFT along rows
-    F_rowwise = np.dot(A_M, f)
-
-    # Apply DFT along columns
-    F = np.dot(F_rowwise, A_N.T)  # Transpose A_N to align for column-wise operation
-
-    return F
+    return A_M.dot(f).dot(A_N)
 
 
 def dft_mat3(f: np.ndarray):

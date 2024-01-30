@@ -11,8 +11,8 @@ def main():
     #dft_sum2_test()
     #dft_sum3_test()
     #dft_mat1_test()
-    dft_mat2_test()
-    #dft_mat3_test()
+    #dft_mat2_test()
+    dft_mat3_test()
 
 
 def dft_sum1_test():
@@ -77,7 +77,7 @@ def dft_mat2_test():
 
 
 def dft_mat3_test():
-    M, N, O = 200, 200, 200
+    M, N, O = 100, 100, 100
     f = signal3((M, N, O))
     ft = torch.from_numpy(f)
 
