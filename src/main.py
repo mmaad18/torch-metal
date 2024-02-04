@@ -12,7 +12,11 @@ def main():
     #dft_sum3_test()
     #dft_mat1_test()
     #dft_mat2_test()
-    dft_mat3_test()
+    #dft_mat3_test()
+    #signal_wrap1_test()
+    #dft_matrix_wrap_test()
+    #dft_matrix_wrap_test2()
+    idft_wrap1_test()
 
 
 def dft_sum1_test():
@@ -85,6 +89,83 @@ def dft_mat3_test():
     Ft = time_function(torch.fft.fftn, ft)
 
     diff = np.sum(np.abs(F - Ft.numpy())) / (M*N*O)
+    print("diff:\n", diff)
+
+
+def signal_wrap1_test():
+    M = 20
+    f = signal1(M)
+
+    fw = time_function(signal_wrap1, f, 10)
+    F = time_function(dft_mat1, f)
+
+    print("fw:\n", fw)
+    print("F:\n", F)
+
+
+def dft_matrix_wrap_test1():
+    np.set_printoptions(precision=2, suppress=True)
+
+    N = 4
+    L = 8
+
+    A = dft_matrix(N, L)
+    Aw = dft_matrix_wrap(L, N)
+
+    print("Aw:\n", Aw)
+    print("A:\n", A)
+
+    B = A - Aw
+    print("B:\n", B)
+
+    diff = np.sum(np.abs(A - Aw)) / (N*L)
+    print("diff:\n", diff)
+
+
+def dft_matrix_wrap_test2():
+    np.set_printoptions(precision=2, suppress=True)
+
+    N = 800
+    L = 800
+
+    f = signal1(L)
+
+    start = time.perf_counter()
+    A = dft_matrix(N, L)
+    F = A.dot(f)
+    end = time.perf_counter()
+    time1 = end - start
+
+    print(f"F took {time1} seconds")
+
+    start = time.perf_counter()
+    fw = signal_wrap1(f, N)
+    Aw = dft_matrix_sym(N)
+    Fw = Aw.dot(fw)
+    end = time.perf_counter()
+    time2 = end - start
+
+    print(f"Fw took {time2} seconds")
+
+    time_factor = time1 / time2
+    print(f"time_factor: {time_factor}")
+
+
+def idft_wrap1_test():
+    M = 20
+    f = signal1(M)
+
+    F = time_function(dft_mat1, f)
+
+    A = dft_matrix(10, 20)
+    Aw = dft_matrix_wrap(10, 20)
+
+    ft = idft_wrap1(A, F, 20)
+
+    print("f:\n", f)
+    print("ft:\n", ft)
+
+    diff = np.sum(np.abs(f - ft)) / M
     print("diff:\n", diff)
 
 

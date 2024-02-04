@@ -7,6 +7,20 @@ def signal1(size: int = 1000):
     return np.array(f, dtype=np.complex128)
 
 
+def signal_wrap1(f: np.ndarray, N: int):
+    L = len(f)
+    P = int(np.ceil(L / N))
+
+    # Pad f with zeros
+    f_pad = np.zeros(P * N, dtype=np.complex128)
+    f_pad[:L] = f
+
+    # Reshape f_pad into a matrix
+    f_tilde = f_pad.reshape([P, N])
+
+    return f_tilde.sum(axis=0)
+
+
 def signal2(shape: Tuple[int, int] = (100, 100)):
     f = np.random.random(shape)
     return np.array(f, dtype=np.complex128)
@@ -56,36 +70,47 @@ def twiddle_factor(k: int, n: int, N: int):
     return np.exp(-1j * 2 * np.pi * k * n / N)
 
 
-def dft_matrix(N: int):
-    A = np.zeros([N, N], dtype=np.complex128)
+def dft_matrix(M: int, N: int):
+    A = np.zeros([M, N], dtype=np.complex128)
 
-    for k in range(0, N):
+    for k in range(0, M):
         for n in range(0, N):
-            A[k, n] = twiddle_factor(k, n, N)
+            A[k, n] = twiddle_factor(k, n, M)
 
     return A
 
 
+def dft_matrix_sym(N: int):
+    return dft_matrix(N, N)
+
+
+def dft_matrix_wrap(M: int, N: int):
+    P = int(np.ceil(M / N))
+    Aw = dft_matrix_sym(N)
+
+    return np.tile(Aw, (1, P))
+
+
 def dft_mat1(f: np.ndarray):
     N = len(f)
-    A = dft_matrix(N)
+    A = dft_matrix_sym(N)
 
     return A.dot(f)
 
 
 def dft_mat2(f: np.ndarray):
     M, N = f.shape
-    A_M = dft_matrix(M)  # DFT matrix for the rows
-    A_N = dft_matrix(N)  # DFT matrix for the columns
+    A_M = dft_matrix_sym(M)  # DFT matrix for the rows
+    A_N = dft_matrix_sym(N)  # DFT matrix for the columns
 
     return A_M.dot(f).dot(A_N)
 
 
 def dft_mat3(f: np.ndarray):
     M, N, O = f.shape
-    A_M = dft_matrix(M)  # DFT matrix for the rows
-    A_N = dft_matrix(N)  # DFT matrix for the columns
-    A_O = dft_matrix(O)  # DFT matrix for the depths
+    A_M = dft_matrix_sym(M)  # DFT matrix for the rows
+    A_N = dft_matrix_sym(N)  # DFT matrix for the columns
+    A_O = dft_matrix_sym(O)  # DFT matrix for the depths
 
     # Apply DFT along the first dimension (M)
     F_first = np.zeros_like(f, dtype=np.complex128)
@@ -106,6 +131,17 @@ def dft_mat3(f: np.ndarray):
             F[m, n, :] = A_O.dot(F_second[m, n, :])
 
     return F
+
+
+def idft_wrap1(A_t: np.ndarray, F: np.ndarray, N: int):
+    return A_t.dot(F.conj()) / N
+
+
+def fft_mat1(f: np.ndarray):
+    return np.fft.fft(f)
+
+
+
 
 
 
