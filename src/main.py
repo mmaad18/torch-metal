@@ -16,7 +16,8 @@ def main():
     #signal_wrap1_test()
     #dft_matrix_wrap_test()
     #dft_matrix_wrap_test2()
-    idft_wrap1_test()
+    #idft_wrap1_test()
+    fft_mat1_test()
 
 
 def dft_sum1_test():
@@ -152,20 +153,36 @@ def dft_matrix_wrap_test2():
 
 
 def idft_wrap1_test():
-    M = 20
+    np.set_printoptions(precision=3, suppress=True)
+
+    M = 2000
     f = signal1(M)
 
-    F = time_function(dft_mat1, f)
+    F = dft_mat1(f)
 
-    A = dft_matrix(10, 20)
-    Aw = dft_matrix_wrap(10, 20)
+    fs = time_function(idft_sum1, F, M)
 
-    ft = idft_wrap1(A, F, 20)
+    A = time_function(dft_matrix_sym, M)
 
-    print("f:\n", f)
-    print("ft:\n", ft)
+    ft = time_function(idft_wrap1, A, F, M)
+    ftc = time_function(idft_wrap_comp1, A, F, M)
 
-    diff = np.sum(np.abs(f - ft)) / M
+    diff1 = np.sum(np.abs(fs - ft)) / M
+    print("diff1:\n", diff1)
+
+    diff2 = np.sum(np.abs(fs - ftc)) / M
+    print("diff2:\n", diff2)
+
+
+def fft_mat1_test():
+    M = 2000
+    f = signal1(M)
+    ft = torch.from_numpy(f)
+
+    F = time_function(fft_mat1, f)
+    Ft = time_function(torch.fft.fft, ft)
+
+    diff = np.sum(np.abs(F - Ft.numpy())) / M
     print("diff:\n", diff)
 
 

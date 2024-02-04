@@ -86,9 +86,9 @@ def dft_matrix_sym(N: int):
 
 def dft_matrix_wrap(M: int, N: int):
     P = int(np.ceil(M / N))
-    Aw = dft_matrix_sym(N)
+    A_t = dft_matrix_sym(N)
 
-    return np.tile(Aw, (1, P))
+    return np.tile(A_t, (1, P))
 
 
 def dft_mat1(f: np.ndarray):
@@ -133,7 +133,20 @@ def dft_mat3(f: np.ndarray):
     return F
 
 
+def idft_sum1(F: np.ndarray, M: int):
+    P = len(F)
+    f = np.zeros(M, dtype=np.complex128)
+    for m in range(0, M):
+        for p in range(0, P):
+            f[m] += F[p] * np.exp(1j * 2 * np.pi * p * m / M)
+    return f / M
+
+
 def idft_wrap1(A_t: np.ndarray, F: np.ndarray, N: int):
+    return A_t.conj().dot(F) / N
+
+
+def idft_wrap_comp1(A_t: np.ndarray, F: np.ndarray, N: int):
     return A_t.dot(F.conj()) / N
 
 
