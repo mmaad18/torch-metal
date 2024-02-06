@@ -93,6 +93,12 @@ Twiddle factor
 def twiddle_factor(k: int, n: int, N: int):
     return np.exp(-1j * 2 * np.pi * k * n / N)
 
+'''
+Twiddle factor where n = 1
+'''
+def twiddle_factor1(k: int, N: int):
+    return np.exp(-1j * 2 * np.pi * k / N)
+
 
 '''
 DFT matrix
@@ -205,31 +211,76 @@ def idft_wrap_comp1(A_t: np.ndarray, F: np.ndarray, N: int):
 
 def fft_mat1(f: np.ndarray):
     L = len(f)
-    M = int(np.ceil(L / 2))
+    M = L // 2
 
     G = np.zeros(M, dtype=np.complex128)
     H = np.zeros(M, dtype=np.complex128)
     W = np.zeros(M, dtype=np.complex128)
 
-    for m in range(0, M, 2):
-        for n in range(0, M, 2):
-            G[m] += f[n] * twiddle_factor(m, n, M)
+    g = f[0::2]
+    h = f[1::2]
 
-    for m in range(1, M, 2):
-        for n in range(1, M, 2):
-            H[m] += f[n] * twiddle_factor(m, n, M)
-            W[m] = twiddle_factor(m, 1, M)
+    for k in range(0, M):
+        W[k] = twiddle_factor1(k, L)
 
-    X1 = np.zeros(M, dtype=np.complex128)
-    X2 = np.zeros(M, dtype=np.complex128)
+        for n in range(0, M):
+            w = twiddle_factor(k, n, M)
+            G[k] += g[n] * w
+            H[k] += h[n] * w
 
-    X1 = G + H * W
-    X2 = G - H * W
+    HW = H * W
+    X1 = G + HW
+    X2 = G - HW
 
     return np.concatenate([X1, X2])
 
 
+def fft_mat2(f):
+    L = len(f)
+    if L <= 1:
+        return f
+
+    # Divide: Split the sequence into even and odd parts
+    even = fft_mat2(f[0::2])
+    odd = fft_mat2(f[1::2])
+
+    # Conquer & Combine: Apply twiddle factors and combine the results
+    T = np.array([twiddle_factor1(k, L) * odd[k % (L//2)] for k in range(L)])
+    return np.concatenate([even + T[:L//2], even - T[:L//2]])
 
 
+def fft_mat3(f):
+    L = len(f)
+    if L <= 1:
+        return f
+
+    # Divide: Split the sequence into even and odd parts
+    even = fft_mat3(f[0::2])
+    odd = fft_mat3(f[1::2])
+
+    # Twiddle factors
+    T = np.exp(-2j * np.pi * np.arange(L) / L)
+
+    # Combine: Apply twiddle factors and combine the results
+    combined = np.zeros(L, dtype=np.complex128)
+    half_L = L // 2
+    combined[:half_L] = even + T[:half_L] * odd
+    combined[half_L:] = even - T[half_L:L] * odd
+
+    return combined
+
+
+def fft_mat4(f):
+    L = len(f)
+    if L <= 1:
+        return f
+
+    # Split the signal into even and odd parts
+    even = fft_mat4(f[0::2])
+    odd = fft_mat4(f[1::2])
+
+    # Combine the even and odd parts
+    T = np.exp(-2j * np.pi * np.arange(L) / L)
+    return np.concatenate([even + T[:L // 2] * odd, even - T[:L // 2] * odd])
 
 

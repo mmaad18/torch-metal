@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from fourier import *
@@ -237,15 +238,25 @@ def idft_wrap1_test():
 Verifies that fft_mat1() is working correctly. 
 '''
 def fft_mat1_test():
-    M = 2000
+    M = 2**12
     f = signal1(M)
     ft = torch.from_numpy(f)
 
-    F = time_function(fft_mat1, f)
+    F1 = time_function(fft_mat1, f)
+    F2 = time_function(fft_mat2, f)
     Ft = time_function(torch.fft.fft, ft)
+    Fn = time_function(np.fft.fft, f)
+    Fs = time_function(dft_sum1, f)
+    Fd = time_function(dft_mat1, f)
 
-    diff = np.sum(np.abs(F - Ft.numpy())) / M
-    print("diff:\n", diff)
+    diff1 = np.sum(np.abs(F1 - Fn)) / M
+    print("diff1:\n", diff1)
+
+    diff2 = np.sum(np.abs(F2 - Fn)) / M
+    print("diff2:\n", diff2)
+
+    diff3 = np.sum(np.abs(Fn - Ft.numpy())) / M
+    print("diff3:\n", diff3)
 
 
 main()
