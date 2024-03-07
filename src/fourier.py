@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Tuple
 
-
 '''
 1-D signal
 '''
@@ -91,13 +90,21 @@ def dft_sum3(f: np.ndarray):
 Twiddle factor
 '''
 def twiddle_factor(k: int, n: int, N: int):
-    return np.exp(-1j * 2 * np.pi * k * n / N)
+    return np.exp(-2j * np.pi * k * n / N)
+
 
 '''
 Twiddle factor where n = 1
 '''
 def twiddle_factor1(k: int, N: int):
-    return np.exp(-1j * 2 * np.pi * k / N)
+    return np.exp(-2j * np.pi * k / N)
+
+
+'''
+Vector of twiddle factors
+'''
+def twiddle_vector(N: int):
+    return np.exp(-2j * np.pi * np.arange(N // 2) / N)
 
 
 '''
@@ -209,78 +216,77 @@ def idft_wrap_comp1(A_t: np.ndarray, F: np.ndarray, N: int):
     return A_t.dot(F.conj()) / N
 
 
+'''
+Bit reversal
+
+int(bin(i)[2:] => convert i to binary and remove the '0b' prefix
+.zfill(bits) => pad the binary number with zeros to the left
+[::-1] => reverse the binary number
+int(, 2) => convert the binary number back to decimal
+'''
+def bit_rev(N):
+    bits = int(np.log2(N))
+
+    rev_indices = np.zeros(N, dtype=int)
+
+    for i in range(N):
+        rev_indices[i] = int(bin(i)[2:].zfill(bits)[::-1], 2)
+
+    return rev_indices
+
+
+def bit_rev_optimized(N):
+    bits = int(np.log2(N))
+    rev_indices = np.arange(N, dtype=int)
+    reversed_bits = np.zeros_like(rev_indices)
+
+    for i in range(bits):
+        # Shift rev_indices right by i, isolate the bit, shift it to its new position, and accumulate
+        reversed_bits |= ((rev_indices >> i) & 1) << (bits - 1 - i)
+
+    return reversed_bits
+
+
+
+def construct_stages(N):
+    stages = []
+    n = 2
+
+    while n <= N:
+        m = n // 2
+        x = np.zeros((N // m, m), dtype=np.complex128)
+        stages.append(x)
+        n *= 2
+
+    stages.append(np.zeros((1, N), dtype=np.complex128))
+
+    return stages
+
+
+'''
+FFT of a 1-D signal 
+'''
 def fft_mat1(f: np.ndarray):
     L = len(f)
-    M = L // 2
 
-    G = np.zeros(M, dtype=np.complex128)
-    H = np.zeros(M, dtype=np.complex128)
-    W = np.zeros(M, dtype=np.complex128)
+    indices = bit_rev_optimized(L)
+    f = f[indices]
 
-    g = f[0::2]
-    h = f[1::2]
+    stages = construct_stages(L)
+    stages[0] = f
 
-    for k in range(0, M):
-        W[k] = twiddle_factor1(k, L)
+    n = 2
+    for i in range(1, len(stages)):
+        W = twiddle_vector(n)
+        prev_stage = stages[i-1]
 
-        for n in range(0, M):
-            w = twiddle_factor(k, n, M)
-            G[k] += g[n] * w
-            H[k] += h[n] * w
+        for j in range(0, len(prev_stage), 2):
+            psW = prev_stage[j + 1] * W
 
-    HW = H * W
-    X1 = G + HW
-    X2 = G - HW
+            stages[i][j//2] = np.concatenate((prev_stage[j] + psW, prev_stage[j] - psW))
 
-    return np.concatenate([X1, X2])
+        n *= 2
 
-
-def fft_mat2(f):
-    L = len(f)
-    if L <= 1:
-        return f
-
-    # Divide: Split the sequence into even and odd parts
-    even = fft_mat2(f[0::2])
-    odd = fft_mat2(f[1::2])
-
-    # Conquer & Combine: Apply twiddle factors and combine the results
-    T = np.array([twiddle_factor1(k, L) * odd[k % (L//2)] for k in range(L)])
-    return np.concatenate([even + T[:L//2], even - T[:L//2]])
-
-
-def fft_mat3(f):
-    L = len(f)
-    if L <= 1:
-        return f
-
-    # Divide: Split the sequence into even and odd parts
-    even = fft_mat3(f[0::2])
-    odd = fft_mat3(f[1::2])
-
-    # Twiddle factors
-    T = np.exp(-2j * np.pi * np.arange(L) / L)
-
-    # Combine: Apply twiddle factors and combine the results
-    combined = np.zeros(L, dtype=np.complex128)
-    half_L = L // 2
-    combined[:half_L] = even + T[:half_L] * odd
-    combined[half_L:] = even - T[half_L:L] * odd
-
-    return combined
-
-
-def fft_mat4(f):
-    L = len(f)
-    if L <= 1:
-        return f
-
-    # Split the signal into even and odd parts
-    even = fft_mat4(f[0::2])
-    odd = fft_mat4(f[1::2])
-
-    # Combine the even and odd parts
-    T = np.exp(-2j * np.pi * np.arange(L) / L)
-    return np.concatenate([even + T[:L // 2] * odd, even - T[:L // 2] * odd])
+    return stages[-1]
 
 

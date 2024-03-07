@@ -5,19 +5,6 @@ from fourier import *
 from utils import *
 
 
-def main():
-    #dft_sum1_test()
-    #dft_sum2_test()
-    #dft_sum3_test()
-    #dft_mat1_test()
-    #dft_mat2_test()
-    #dft_mat3_test()
-    #signal_wrap1_test()
-    #dft_matrix_wrap_test1()
-    #dft_matrix_wrap_test2()
-    #idft_wrap1_test()
-    fft_mat1_test()
-
 '''
 Verifies that dft_sum1() is working correctly. 
 Torch fft is orders of magnitude faster than dft_sum1.
@@ -236,27 +223,32 @@ def idft_wrap1_test():
 
 '''
 Verifies that fft_mat1() is working correctly. 
+Proves that:
+- fft_mat1 is much slower than np.fft 
+- bit_rev takes some time to run 
+- construct_stages uses a small fraction of the total time of fft_mat1 
 '''
 def fft_mat1_test():
-    M = 2**12
+    M = 2**22
     f = signal1(M)
     ft = torch.from_numpy(f)
 
+    # time_function(bit_rev, M)
+    # time_function(construct_stages, M)
+
     F1 = time_function(fft_mat1, f)
-    F2 = time_function(fft_mat2, f)
     Ft = time_function(torch.fft.fft, ft)
     Fn = time_function(np.fft.fft, f)
-    Fs = time_function(dft_sum1, f)
-    Fd = time_function(dft_mat1, f)
 
     diff1 = np.sum(np.abs(F1 - Fn)) / M
     print("diff1:\n", diff1)
 
-    diff2 = np.sum(np.abs(F2 - Fn)) / M
+    diff2 = np.sum(np.abs(Fn - Ft.numpy())) / M
     print("diff2:\n", diff2)
 
-    diff3 = np.sum(np.abs(Fn - Ft.numpy())) / M
-    print("diff3:\n", diff3)
+
+def main():
+    fft_mat1_test()
 
 
 main()
