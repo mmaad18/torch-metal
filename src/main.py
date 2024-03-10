@@ -1,15 +1,15 @@
-import numpy as np
 import torch
 
 from fourier import *
 from utils import *
-
 
 '''
 Verifies that dft_sum1() is working correctly. 
 Torch fft is orders of magnitude faster than dft_sum1.
 '''
 def dft_sum1_test():
+    title_print("dft_sum1_test")
+
     M = 2000
     f = signal1(M)
     ft = torch.from_numpy(f)
@@ -23,12 +23,16 @@ def dft_sum1_test():
     time_factor = t1 / t2
     print(f"time_factor: {time_factor}")
 
+    print("F:\n", F)
+
 
 '''
 Verifies that dft_sum2() is working correctly. 
 Torch fft is orders of magnitude faster than dft_sum2.
 '''
 def dft_sum2_test():
+    title_print("dft_sum2_test")
+
     M, N = 50, 50
     f = signal2((M, N))
     ft = torch.from_numpy(f)
@@ -48,6 +52,8 @@ Verifies that dft_sum3() is working correctly.
 Torch fft is orders of magnitude faster than dft_sum3.
 '''
 def dft_sum3_test():
+    title_print("dft_sum3_test")
+
     M, N, O = 15, 15, 15
     f = signal3((M, N, O))
     ft = torch.from_numpy(f)
@@ -68,6 +74,8 @@ Torch fft is orders of magnitude faster than dft_mat1.
 dft_mat1 is faster than dft_sum1.
 '''
 def dft_mat1_test():
+    title_print("dft_mat1_test")
+
     M = 2000
     f = signal1(M)
     ft = torch.from_numpy(f)
@@ -88,6 +96,8 @@ Torch fft is orders of magnitude faster than dft_mat2.
 dft_mat2 is orders of magnitude faster than dft_sum2.
 '''
 def dft_mat2_test():
+    title_print("dft_mat2_test")
+
     M, N = 1000, 1000
     f = signal2((M, N))
     ft = torch.from_numpy(f)
@@ -108,6 +118,8 @@ Torch fft is orders of magnitude faster than dft_mat3.
 dft_mat3 is orders of magnitude faster than dft_sum3.
 '''
 def dft_mat3_test():
+    title_print("dft_mat3_test")
+
     M, N, O = 300, 300, 300
     f = signal3((M, N, O))
     ft = torch.from_numpy(f)
@@ -126,6 +138,8 @@ def dft_mat3_test():
 Verifies that output from signal_wrap1() looks sensible.
 '''
 def signal_wrap1_test():
+    title_print("signal_wrap1_test")
+
     M = 20
     f = signal1(M)
 
@@ -139,6 +153,8 @@ def signal_wrap1_test():
 Verifies that dft_matrix_wrap() is working correctly.
 '''
 def dft_matrix_wrap_test1():
+    title_print("dft_matrix_wrap_test1")
+
     np.set_printoptions(precision=2, suppress=True)
 
     N = 4
@@ -160,6 +176,8 @@ Proves that:
 - When N > L => Computing DFT is faster using the normal method.
 '''
 def dft_matrix_wrap_test2():
+    title_print("dft_matrix_wrap_test2")
+
     np.set_printoptions(precision=2, suppress=True)
 
     N = 2000
@@ -179,7 +197,7 @@ def dft_matrix_wrap_test2():
     # Wrapped DFT
     start = time.perf_counter()
     fw = signal_wrap1(f, N)
-    Aw = dft_matrix_sym(N)
+    Aw = dft_matrix_symm(N)
     Fw = Aw.dot(fw)
     end = time.perf_counter()
     time2 = end - start
@@ -197,11 +215,13 @@ Proves that:
 - Having to conjugate only the signal is much faster than having to conjugate the DFT matrix.
 '''
 def idft_wrap1_test():
+    title_print("idft_wrap1_test")
+
     np.set_printoptions(precision=3, suppress=True)
 
     M = 2000
     f = signal1(M)
-    A = dft_matrix_sym(M)
+    A = dft_matrix_symm(M)
     F = dft_mat1(f)
 
     fs, t1 = time_function_out(idft_sum1, F, M)
@@ -229,7 +249,9 @@ Proves that:
 - construct_stages uses a small fraction of the total time of fft_mat1 
 '''
 def fft_mat1_test():
-    M = 2**22
+    title_print("fft_mat1_test")
+
+    M = 2**20
     f = signal1(M)
     ft = torch.from_numpy(f)
 
@@ -247,8 +269,30 @@ def fft_mat1_test():
     print("diff2:\n", diff2)
 
 
+def fft_mat2_test():
+    title_print("fft_mat2_test")
+
+    M, N = 2**10, 2**10
+    f = signal2((M, N))
+    ft = torch.from_numpy(f)
+
+    F1 = time_function(fft_mat2, f)
+    Ft = time_function(torch.fft.fft2, ft)
+    Fn = time_function(np.fft.fft2, f)
+    Fm = time_function(dft_mat2, f)
+
+    diff1 = np.sum(np.abs(F1 - Fn)) / (M*N)
+    print("diff1:\n", diff1)
+
+    diff2 = np.sum(np.abs(Fn - Ft.numpy())) / (M*N)
+    print("diff2:\n", diff2)
+
+    diff3 = np.sum(np.abs(Fm - Fn)) / (M*N)
+    print("diff3:\n", diff3)
+
+
 def main():
-    fft_mat1_test()
+    fft_mat2_test()
 
 
 main()

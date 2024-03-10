@@ -16,3 +16,7 @@ def time_function_out(func, *args, **kwargs):
     diff = end - start
     print(f"{func.__name__} took {diff} seconds")
     return result, diff
+
+
+def title_print(title: str):
+    print(f"\n{'='*10}| {title} |{'='*10}\n")

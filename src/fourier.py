@@ -5,8 +5,7 @@ from typing import Tuple
 1-D signal
 '''
 def signal1(size: int = 1000):
-    f = np.random.random(size)
-    return np.array(f, dtype=np.complex128)
+    return np.random.random(size)
 
 
 '''
@@ -17,7 +16,7 @@ def signal_wrap1(f: np.ndarray, N: int):
     P = int(np.ceil(L / N))
 
     # Pad f with zeros
-    f_pad = np.zeros(P * N, dtype=np.complex128)
+    f_pad = np.zeros(P * N, dtype=np.float64)
     f_pad[:L] = f
 
     # Reshape f_pad into a matrix
@@ -30,16 +29,14 @@ def signal_wrap1(f: np.ndarray, N: int):
 2-D signal
 '''
 def signal2(shape: Tuple[int, int] = (100, 100)):
-    f = np.random.random(shape)
-    return np.array(f, dtype=np.complex128)
+    return np.random.random(shape)
 
 
 '''
 3-D signal
 '''
 def signal3(shape: Tuple[int, int, int] = (10, 10, 10)):
-    f = np.random.random(shape)
-    return np.array(f, dtype=np.complex128)
+    return np.random.random(shape)
 
 
 '''
@@ -123,7 +120,7 @@ def dft_matrix(M: int, N: int):
 '''
 Symmetric DFT matrix
 '''
-def dft_matrix_sym(N: int):
+def dft_matrix_symm(N: int):
     return dft_matrix(N, N)
 
 
@@ -132,7 +129,7 @@ DFT matrix using the wrapped method
 '''
 def dft_matrix_wrap(M: int, N: int):
     P = int(np.ceil(N / M))
-    A_t = dft_matrix_sym(M)
+    A_t = dft_matrix_symm(M)
 
     return np.tile(A_t, (1, P))
 
@@ -142,7 +139,7 @@ Calculate the DFT of a 1-D signal using DFT matrix
 '''
 def dft_mat1(f: np.ndarray):
     N = len(f)
-    A = dft_matrix_sym(N)
+    A = dft_matrix_symm(N)
 
     return A.dot(f)
 
@@ -152,8 +149,8 @@ Calculate the DFT of a 2-D signal using 2 DFT matrix
 '''
 def dft_mat2(f: np.ndarray):
     M, N = f.shape
-    A_M = dft_matrix_sym(M)  # DFT matrix for the rows
-    A_N = dft_matrix_sym(N)  # DFT matrix for the columns
+    A_M = dft_matrix_symm(M)  # DFT matrix for the rows
+    A_N = dft_matrix_symm(N)  # DFT matrix for the columns
 
     return A_M.dot(f).dot(A_N)
 
@@ -163,9 +160,9 @@ Calculate the DFT of a 3-D signal using 3 DFT matrix
 '''
 def dft_mat3(f: np.ndarray):
     M, N, O = f.shape
-    A_M = dft_matrix_sym(M)  # DFT matrix for the rows
-    A_N = dft_matrix_sym(N)  # DFT matrix for the columns
-    A_O = dft_matrix_sym(O)  # DFT matrix for the depths
+    A_M = dft_matrix_symm(M)  # DFT matrix for the rows
+    A_N = dft_matrix_symm(N)  # DFT matrix for the columns
+    A_O = dft_matrix_symm(O)  # DFT matrix for the depths
 
     # Apply DFT along the first dimension (M)
     F_first = np.zeros_like(f, dtype=np.complex128)
@@ -288,5 +285,21 @@ def fft_mat1(f: np.ndarray):
         n *= 2
 
     return stages[-1]
+
+
+'''
+FFT of a 2-D signal
+'''
+def fft_mat2(f: np.ndarray):
+    M, N = f.shape
+    F = np.zeros([M, N], dtype=np.complex128)
+
+    for m in range(M):
+        F[m, :] = fft_mat1(f[m, :])
+
+    for n in range(N):
+        F[:, n] = fft_mat1(F[:, n])
+
+    return F
 
 
