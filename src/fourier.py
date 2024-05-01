@@ -221,7 +221,7 @@ int(bin(i)[2:] => convert i to binary and remove the '0b' prefix
 [::-1] => reverse the binary number
 int(, 2) => convert the binary number back to decimal
 '''
-def bit_rev(N):
+def bit_rev_raw(N: int):
     bits = int(np.log2(N))
 
     rev_indices = np.zeros(N, dtype=int)
@@ -232,7 +232,7 @@ def bit_rev(N):
     return rev_indices
 
 
-def bit_rev_optimized(N):
+def bit_rev(N: int):
     bits = int(np.log2(N))
     rev_indices = np.arange(N, dtype=int)
     reversed_bits = np.zeros_like(rev_indices)
@@ -244,8 +244,23 @@ def bit_rev_optimized(N):
     return reversed_bits
 
 
+def bit_rev_signal2(f: np.ndarray):
+    N, M = f.shape
 
-def construct_stages(N):
+    brN = bit_rev(N)
+    brM = bit_rev(M)
+
+    for i in range(N):
+        for j in range(M):
+            f[i, j] = i * N + j
+
+    for row in range(N):
+        f[row] = f[row][brM]
+
+    return f[brN]
+
+
+def construct_stages1(N: int):
     stages = []
     n = 2
 
@@ -260,16 +275,50 @@ def construct_stages(N):
     return stages
 
 
+def construct_stages_symm2(N):
+    stages = []
+    n = 2
+
+    while n <= N:
+        m = n // 2
+        x = np.zeros((N // m, N // m, m, m), dtype=np.complex128)
+        stages.append(x)
+        n *= 2
+
+    stages.append(np.zeros((1, 1, N, N), dtype=np.complex128))
+
+    return stages
+
+# def construct_stages_symm2(N: int):
+#     stages = []
+#     n = 2
+#
+#     while n <= N:
+#         substage = []
+#
+#         m = n // 2
+#         x = np.zeros((N // m, N // m), dtype=np.complex128)
+#         for i in range(n):
+#             substage.append(x)
+#
+#         n *= 2
+#         stages.append(substage)
+#
+#     stages.append(np.zeros((N, N), dtype=np.complex128))
+#
+#     return stages
+
+
 '''
 FFT of a 1-D signal 
 '''
 def fft_mat1(f: np.ndarray):
     L = len(f)
 
-    indices = bit_rev_optimized(L)
+    indices = bit_rev(L)
     f = f[indices]
 
-    stages = construct_stages(L)
+    stages = construct_stages1(L)
     stages[0] = f
 
     n = 2
@@ -287,19 +336,38 @@ def fft_mat1(f: np.ndarray):
     return stages[-1]
 
 
+def sub_dft2(f: np.ndarray, k1: int, k2: int, i: int, j: int):
+    N, _ = f.shape
+    F = np.zeros([N, N], dtype=np.complex128)
+
+    for m1 in range(0, N):
+        for m2 in range(0, N):
+            F[k1, k2] += f[2*m1 + i, 2*m2 + j] * twiddle_factor1(m1*k1 + m2*k2, N//2)
+
+    return F
+
+
 '''
 FFT of a 2-D signal
 '''
 def fft_mat2(f: np.ndarray):
     M, N = f.shape
-    F = np.zeros([M, N], dtype=np.complex128)
+    f = bit_rev_signal2(f)
 
-    for m in range(M):
-        F[m, :] = fft_mat1(f[m, :])
+    stages = construct_stages_symm2(N)
 
-    for n in range(N):
-        F[:, n] = fft_mat1(F[:, n])
+    stages[0][:, :, 0, 0] = f
 
-    return F
+    n1, n2 = 2, 2
+
+    for i in range(1, len(stages)):
+        for k1 in range(n1):
+            for k2 in range(n2):
+                for i1 in range(2):
+                    for i2 in range(2):
+                        stages[i][k1, k2, i1, i2] = sub_dft2(stages[i-1][:, :, :, :], k1, k2, i1, i2)
+
+
+    return f
 
 

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from fourier import *
@@ -269,10 +270,13 @@ def fft_mat1_test():
     print("diff2:\n", diff2)
 
 
+'''
+Verifies that fft_mat2() works correctly.
+'''
 def fft_mat2_test():
     title_print("fft_mat2_test")
 
-    M, N = 2**10, 2**10
+    M, N = 2**3, 2**3
     f = signal2((M, N))
     ft = torch.from_numpy(f)
 
@@ -291,7 +295,32 @@ def fft_mat2_test():
     print("diff3:\n", diff3)
 
 
+'''
+Example of a 2D bit reversal 
+'''
+def bit_rev2_test():
+    title_print("2D bit_rev test")
+
+    N = 4
+    M = 8
+    f = np.zeros((N, M), dtype=int)
+
+    start = time.perf_counter()
+
+    F = time_function(bit_rev_signal2, f)
+
+    end = time.perf_counter()
+    print(f"bit_rev2 took {end - start} seconds")
+
+    print("F:\n", F)
+
+
 def main():
+    #construct_stages1(8)
+    #construct_stages2(8)
+    x = twiddle_vector(16)
+    print(x)
+    print(x.shape)
     fft_mat2_test()
 
 
