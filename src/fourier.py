@@ -1,6 +1,8 @@
 import numpy as np
 from typing import Tuple
 
+from src.operations import frobenius_inner_product
+
 '''
 1-D signal
 '''
@@ -102,6 +104,15 @@ Vector of twiddle factors
 '''
 def twiddle_vector(N: int):
     return np.exp(-2j * np.pi * np.arange(N // 2) / N)
+
+
+def twiddle_matrix(k1: int, k2: int, N: int):
+    M = N // 2
+
+    x_vec = np.exp(-2j * np.pi * k1 * np.arange(M) / M)
+    y_vec = np.exp(-2j * np.pi * k2 * np.arange(M) / M)
+
+    return np.outer(y_vec, x_vec)
 
 
 '''
@@ -250,14 +261,12 @@ def bit_rev_signal2(f: np.ndarray):
     brN = bit_rev(N)
     brM = bit_rev(M)
 
+    f_reordered = np.zeros_like(f)
     for i in range(N):
         for j in range(M):
-            f[i, j] = i * N + j
+            f_reordered[i, j] = f[brN[i], brM[j]]
 
-    for row in range(N):
-        f[row] = f[row][brM]
-
-    return f[brN]
+    return f_reordered
 
 
 def construct_stages1(N: int):
@@ -289,25 +298,6 @@ def construct_stages_symm2(N):
 
     return stages
 
-# def construct_stages_symm2(N: int):
-#     stages = []
-#     n = 2
-#
-#     while n <= N:
-#         substage = []
-#
-#         m = n // 2
-#         x = np.zeros((N // m, N // m), dtype=np.complex128)
-#         for i in range(n):
-#             substage.append(x)
-#
-#         n *= 2
-#         stages.append(substage)
-#
-#     stages.append(np.zeros((N, N), dtype=np.complex128))
-#
-#     return stages
-
 
 '''
 FFT of a 1-D signal 
@@ -336,17 +326,6 @@ def fft_mat1(f: np.ndarray):
     return stages[-1]
 
 
-def sub_dft2(f: np.ndarray, k1: int, k2: int, i: int, j: int):
-    N, _ = f.shape
-    F = np.zeros([N, N], dtype=np.complex128)
-
-    for m1 in range(0, N):
-        for m2 in range(0, N):
-            F[k1, k2] += f[2*m1 + i, 2*m2 + j] * twiddle_factor1(m1*k1 + m2*k2, N//2)
-
-    return F
-
-
 '''
 FFT of a 2-D signal
 '''
@@ -356,18 +335,55 @@ def fft_mat2(f: np.ndarray):
 
     stages = construct_stages_symm2(N)
 
-    stages[0][:, :, 0, 0] = f
+    stages[0] = f.reshape(N, N, 1, 1)
 
-    n1, n2 = 2, 2
+    xwm = np.array([
+        [1, 1, 1, 1],
+        [1, -1, 1, -1],
+        [1, 1, -1, -1],
+        [1, -1, -1, 1]
+    ])
 
     for i in range(1, len(stages)):
-        for k1 in range(n1):
-            for k2 in range(n2):
-                for i1 in range(2):
-                    for i2 in range(2):
-                        stages[i][k1, k2, i1, i2] = sub_dft2(stages[i-1][:, :, :, :], k1, k2, i1, i2)
+        prev_stage = stages[i - 1]
+        n = len(prev_stage)
+        m = n // 2
+        for j in range(0, n, 2):
+            for k in range(0, n, 2):
+
+                X = np.zeros((N, N), dtype=np.complex128)
+
+                X_00 = prev_stage[j, k]
+                X_01 = prev_stage[j, k + 1]
+                X_10 = prev_stage[j + 1, k]
+                X_11 = prev_stage[j + 1, k + 1]
+
+                for k1 in range(m):
+                    for k2 in range(m):
+                        W_M = twiddle_matrix(k1, k2, m)
+                        S_00 = frobenius_inner_product(X_00, W_M)
+                        S_01 = frobenius_inner_product(X_01, W_M)
+                        S_10 = frobenius_inner_product(X_10, W_M)
+                        S_11 = frobenius_inner_product(X_11, W_M)
+
+                        sv = np.array([
+                            S_00,
+                            twiddle_factor1(k2, n) * S_01,
+                            twiddle_factor1(k1, n) * S_10,
+                            twiddle_factor1(k1 + k2, n) * S_11
+                        ])
+
+                        xas = xwm @ sv
+
+                        X[k1, k2] = xas[0]
+                        X[k1, k2 + m] = xas[1]
+                        X[k1 + m, k2] = xas[2]
+                        X[k1 + m, k2 + m] = xas[3]
+
+                stages[i] = X.reshape(N, N, 1, 1)
 
 
-    return f
+
+    return stages[-1].reshape(N, N)
 
 

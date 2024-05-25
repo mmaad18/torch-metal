@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 from fourier import *
+from src.symbolic import *
 from utils import *
 
 '''
@@ -252,7 +253,7 @@ Proves that:
 def fft_mat1_test():
     title_print("fft_mat1_test")
 
-    M = 2**20
+    M = 2**3
     f = signal1(M)
     ft = torch.from_numpy(f)
 
@@ -302,7 +303,7 @@ def bit_rev2_test():
     title_print("2D bit_rev test")
 
     N = 4
-    M = 8
+    M = 4
     f = np.zeros((N, M), dtype=int)
 
     start = time.perf_counter()
@@ -315,13 +316,26 @@ def bit_rev2_test():
     print("F:\n", F)
 
 
+def sym_mat_test():
+    title_print("sym_mat_test")
+
+    A = symbolic_mat_symm(4, 'a')
+    B = symbolic_mat_symm(4, 'b')
+
+    M1 = symbolic_sum(A, B)
+    M2 = sum(A.multiply_elementwise(B))
+
+    diff = M1 - M2
+
+    symbolic_print(M1)
+    print("Diff:")
+    symbolic_print(diff)
+
+
 def main():
-    #construct_stages1(8)
-    #construct_stages2(8)
-    x = twiddle_vector(16)
-    print(x)
-    print(x.shape)
+    #fft_mat1_test()
     fft_mat2_test()
+
 
 
 main()
