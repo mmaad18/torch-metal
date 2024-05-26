@@ -330,60 +330,34 @@ def fft_mat1(f: np.ndarray):
 FFT of a 2-D signal
 '''
 def fft_mat2(f: np.ndarray):
-    M, N = f.shape
+    N0 = f.shape[0]
     f = bit_rev_signal2(f)
 
-    stages = construct_stages_symm2(N)
+    stages = construct_stages_symm2(N0)
 
-    stages[0] = f.reshape(N, N, 1, 1)
+    stages[0] = f.reshape(N0, N0, 1, 1)
 
-    xwm = np.array([
+    CMS = np.array([
         [1, 1, 1, 1],
         [1, -1, 1, -1],
         [1, 1, -1, -1],
         [1, -1, -1, 1]
     ])
 
+
     for i in range(1, len(stages)):
+        stage = stages[i]
+        M = stage.shape[0]
         prev_stage = stages[i - 1]
-        n = len(prev_stage)
-        m = n // 2
-        for j in range(0, n, 2):
-            for k in range(0, n, 2):
+        N = prev_stage.shape[0]
+        dft_size = stage.shape[2]
 
-                X = np.zeros((N, N), dtype=np.complex128)
+        for j in range(0, M):
+            for k in range(0, M):
+                X = prev_stage[j:j + 2, k:k + 2]
 
-                X_00 = prev_stage[j, k]
-                X_01 = prev_stage[j, k + 1]
-                X_10 = prev_stage[j + 1, k]
-                X_11 = prev_stage[j + 1, k + 1]
+                stages[i][j, k] = X.reshape(dft_size, dft_size)
 
-                for k1 in range(m):
-                    for k2 in range(m):
-                        W_M = twiddle_matrix(k1, k2, m)
-                        S_00 = frobenius_inner_product(X_00, W_M)
-                        S_01 = frobenius_inner_product(X_01, W_M)
-                        S_10 = frobenius_inner_product(X_10, W_M)
-                        S_11 = frobenius_inner_product(X_11, W_M)
-
-                        sv = np.array([
-                            S_00,
-                            twiddle_factor1(k2, n) * S_01,
-                            twiddle_factor1(k1, n) * S_10,
-                            twiddle_factor1(k1 + k2, n) * S_11
-                        ])
-
-                        xas = xwm @ sv
-
-                        X[k1, k2] = xas[0]
-                        X[k1, k2 + m] = xas[1]
-                        X[k1 + m, k2] = xas[2]
-                        X[k1 + m, k2 + m] = xas[3]
-
-                stages[i] = X.reshape(N, N, 1, 1)
-
-
-
-    return stages[-1].reshape(N, N)
+    return stages[-1].reshape(N0, N0)
 
 
