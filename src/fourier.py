@@ -352,11 +352,28 @@ def fft_mat2(f: np.ndarray):
         N = prev_stage.shape[0]
         dft_size = stage.shape[2]
 
-        for j in range(0, M):
-            for k in range(0, M):
-                X = prev_stage[j:j + 2, k:k + 2]
+        for j in range(0, N, 2):
+            for k in range(0, N, 2):
+                X_in = prev_stage[j:j + 2, k:k + 2]
+                S = np.zeros((M, M), dtype=np.complex128)
+                X_out = np.zeros((N, N), dtype=np.complex128)
 
-                stages[i][j, k] = X.reshape(dft_size, dft_size)
+                for k1 in range(M):
+                    for k2 in range(M):
+                        W_M = twiddle_matrix(k1, k2, M)
+
+                        S_00 = frobenius_inner_product(X_in[0, 0], W_M)
+                        S_01 = frobenius_inner_product(X_in[0, 1], W_M)
+                        S_10 = frobenius_inner_product(X_in[1, 0], W_M)
+                        S_11 = frobenius_inner_product(X_in[1, 1], W_M)
+
+                        X_out[k1, k2] = S_00
+                        X_out[k1, k2 + M] = twiddle_factor1(k2, N) * S_01
+                        X_out[k1 + M, k2] = twiddle_factor1(k1, N) * S_10
+                        X_out[k1 + M, k2 + M] = twiddle_factor1(k1 + k2, N) * S_11
+
+
+                stages[i][j, k] = CMS @ X_out.reshape(dft_size, dft_size)
 
     return stages[-1].reshape(N0, N0)
 
