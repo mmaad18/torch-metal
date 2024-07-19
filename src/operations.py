@@ -1,7 +1,10 @@
 import numpy as np
 
 
-def frobenius_inner_product(A: np.ndarray, B: np.ndarray):
+"""
+Calculate the Frobenius inner product of two matrices A and B.
+"""
+def fip(A: np.ndarray, B: np.ndarray):
     return np.sum(A * B)
 
 

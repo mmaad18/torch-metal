@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 
-from src.operations import frobenius_inner_product
+from src.operations import fip
 
 '''
 1-D signal
@@ -107,6 +107,9 @@ def twiddle_vector(N: int):
 
 
 def twiddle_matrix(k1: int, k2: int, N: int):
+    if k1 == 0 or k2 == 0:
+        return 1
+
     M = N // 2
 
     x_vec = np.exp(-2j * np.pi * k1 * np.arange(M) / M)
@@ -344,36 +347,54 @@ def fft_mat2(f: np.ndarray):
         [1, -1, -1, 1]
     ])
 
-
     for i in range(1, len(stages)):
         stage = stages[i]
-        M = stage.shape[0]
-        prev_stage = stages[i - 1]
-        N = prev_stage.shape[0]
-        dft_size = stage.shape[2]
+        size = stage.shape[0]
+        N = stage.shape[2]
 
-        for j in range(0, N, 2):
-            for k in range(0, N, 2):
+        prev_stage = stages[i - 1]
+        prev_size = prev_stage.shape[0]
+        M = prev_stage.shape[2]
+
+        print(f"Stage {i}: size={size}, prev_size={prev_size}, dft_size={N}, prev_dft_size={M}")
+
+        for j in range(0, prev_size, 2):
+            for k in range(0, prev_size, 2):
                 X_in = prev_stage[j:j + 2, k:k + 2]
-                S = np.zeros((M, M), dtype=np.complex128)
+
+                print(f"Index: ({j}, {k}), Shape: {X_in.shape}, X_in: \n{X_in}")
+
                 X_out = np.zeros((N, N), dtype=np.complex128)
 
                 for k1 in range(M):
                     for k2 in range(M):
                         W_M = twiddle_matrix(k1, k2, M)
 
-                        S_00 = frobenius_inner_product(X_in[0, 0], W_M)
-                        S_01 = frobenius_inner_product(X_in[0, 1], W_M)
-                        S_10 = frobenius_inner_product(X_in[1, 0], W_M)
-                        S_11 = frobenius_inner_product(X_in[1, 1], W_M)
+                        print(f"Index: ({j}, {k}), Shape: {X_in.shape}, W_M: \n{W_M}")
 
-                        X_out[k1, k2] = S_00
-                        X_out[k1, k2 + M] = twiddle_factor1(k2, N) * S_01
-                        X_out[k1 + M, k2] = twiddle_factor1(k1, N) * S_10
-                        X_out[k1 + M, k2 + M] = twiddle_factor1(k1 + k2, N) * S_11
+                        S_00 = fip(X_in[0, 0], W_M)
+                        S_01 = fip(X_in[0, 1], W_M)
+                        S_10 = fip(X_in[1, 0], W_M)
+                        S_11 = fip(X_in[1, 1], W_M)
+
+                        S_4 = np.array([
+                            S_00,
+                            twiddle_factor1(k2, N) * S_01,
+                            twiddle_factor1(k1, N) * S_10,
+                            twiddle_factor1(k1 + k2, N) * S_11
+                        ])
+
+                        X_4 = CMS @ S_4
+
+                        X_out[k1, k2] = X_4[0]
+                        X_out[k1, k2 + M] = X_4[1]
+                        X_out[k1 + M, k2] = X_4[2]
+                        X_out[k1 + M, k2 + M] = X_4[3]
 
 
-                stages[i][j, k] = CMS @ X_out.reshape(dft_size, dft_size)
+                print(f"Index: ({j}, {k}), Shape: {X_out.shape}, X_out: \n{X_out}")
+
+                stages[i][j//2, k//2] = X_out
 
     return stages[-1].reshape(N0, N0)
 
