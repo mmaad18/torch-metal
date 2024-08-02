@@ -277,8 +277,16 @@ Verifies that fft_mat2() works correctly.
 def fft_mat2_test():
     title_print("fft_mat2_test")
 
-    M, N = 2**3, 2**3
-    f = signal2((M, N))
+    M, N = 2**2, 2**2
+    #f = signal2((M, N))
+
+    f = np.array([
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11, 12],
+        [13, 14, 15, 16]
+    ])
+
     ft = torch.from_numpy(f)
 
     F1 = time_function(fft_mat2, f)
@@ -316,6 +324,18 @@ def bit_rev2_test():
     print("F:\n", F)
 
 
+def twiddle_matrix_test():
+    title_print("twiddle_matrix_test")
+
+    k1 = 3
+    k2 = 4
+    N = 4
+    W_1 = twiddle_matrix(k1, k2, N)
+    W_2 = twiddle_matrix_manual(k1, k2, N)
+
+    print("W diff:\n", W_1 - W_2)
+
+
 def sym_mat_test():
     title_print("sym_mat_test")
 
@@ -333,6 +353,7 @@ def sym_mat_test():
 
 
 def main():
+    #twiddle_matrix_test()
     #fft_mat1_test()
     fft_mat2_test()
 

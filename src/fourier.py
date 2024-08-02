@@ -106,17 +106,24 @@ def twiddle_vector(N: int):
     return np.exp(-2j * np.pi * np.arange(N // 2) / N)
 
 
-def twiddle_matrix(k1: int, k2: int, N: int):
-    if k1 == 0 or k2 == 0:
-        return 1
-
-    M = N // 2
-
+'''
+Matrix of twiddle factors
+'''
+def twiddle_matrix(k1: int, k2: int, M: int):
     x_vec = np.exp(-2j * np.pi * k1 * np.arange(M) / M)
     y_vec = np.exp(-2j * np.pi * k2 * np.arange(M) / M)
 
     return np.outer(y_vec, x_vec)
 
+
+def twiddle_matrix_manual(k1: int, k2: int, M: int):
+    W = np.zeros((M, M), dtype=np.complex128)
+
+    for m1 in range(M):
+        for m2 in range(M):
+            W[m1, m2] = np.exp(-2j * np.pi * (k1 * m1 + k2 * m2) / M)
+
+    return W
 
 '''
 DFT matrix
@@ -362,15 +369,13 @@ def fft_mat2(f: np.ndarray):
             for k in range(0, prev_size, 2):
                 X_in = prev_stage[j:j + 2, k:k + 2]
 
-                print(f"Index: ({j}, {k}), Shape: {X_in.shape}, X_in: \n{X_in}")
-
                 X_out = np.zeros((N, N), dtype=np.complex128)
 
                 for k1 in range(M):
                     for k2 in range(M):
-                        W_M = twiddle_matrix(k1, k2, M)
+                        W_M = twiddle_matrix_manual(k1, k2, M)
 
-                        print(f"Index: ({j}, {k}), Shape: {X_in.shape}, W_M: \n{W_M}")
+                        #print(f"(j, k): ({j}, {k}), (k1, k2): ({k1}, {k2}), W_M: {W_M.shape}, X_in: {X_in.shape}")
 
                         S_00 = fip(X_in[0, 0], W_M)
                         S_01 = fip(X_in[0, 1], W_M)
@@ -391,8 +396,6 @@ def fft_mat2(f: np.ndarray):
                         X_out[k1 + M, k2] = X_4[2]
                         X_out[k1 + M, k2 + M] = X_4[3]
 
-
-                print(f"Index: ({j}, {k}), Shape: {X_out.shape}, X_out: \n{X_out}")
 
                 stages[i][j//2, k//2] = X_out
 
